@@ -10,7 +10,7 @@
 Execute logic using a future or a deferred function at the end of the frame.
 
 
-## Running Deferred logic 
+## Running Deferred logic
 
 Sometimes it is useful to run logic after all of the other logic of the other
 nodes has complete.  While you can ask the
@@ -79,7 +79,8 @@ impl Game {
 }
 ```
 
-While [it is possible to get a Godot pointer inside of a class method](https://godot-rust.github.io/book/register/functions.html?highlight=bind_mut#calling-rust-methods-binds),
+While it is possible to
+[a Godot pointer inside of a class method](https://godot-rust.github.io/book/register/functions.html?highlight=bind_mut#calling-rust-methods-binds),
 `bind()` and `bind_mut()` will not be able to return a guarded object as it is ready
 implicitly bound for the method call.  The below code sample describes how the
 approach would fail.
