@@ -9,11 +9,12 @@
 
 Execute logic using a future or a deferred function at the end of the frame.
 
-## Running Deferred logic
+
+## Running Deferred logic 
 
 Sometimes it is useful to run logic after all of the other logic of the other
 nodes has complete.  While you can ask the
-[godot engine to execute exported Rust functions](https://godot-rust.github.io/gdnative-book/bind/calling-gdscript.html#function-calls)
+[Godot engine to execute exported Rust functions](https://godot-rust.github.io/gdnative-book/bind/calling-gdscript.html#function-calls)
 , godot-rust also provides a type-safe way to defer executed logic to the next
 frame.
 
@@ -36,6 +37,7 @@ impl Game {
   }
 }
 ```
+
 
 ## Futures
 
