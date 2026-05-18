@@ -1,4 +1,4 @@
-# Futures and Deferred Functions
+# Async programming
 
 Execute logic using a future or a deferred function at the end of the frame.
 
@@ -36,10 +36,8 @@ Rust's futures are fully supported for integrating asynchronous programming.
 The key point is that you will need you will need a Godot pointer that can be passed
 to `godot::task::spawn`.
 
-```admonish note title="Connecting signals"
 The only way to connect a signal in Rust so that the callback method
 is called with a Godot pointer is to use the signal builder.
-```
 
 ```rust
 use godot::prelude::*;
@@ -49,19 +47,6 @@ use godot::classes::Area2D;
 #[class(init, base=Node)]
 struct Game {
    base: Base<Node>,
-}
-
-#[godot_api]
-impl INode for Game {
-    fn ready(&mut self) {
-        // Connect signal: $Player.body_entered -> Self::show_messages.
-        self.base()
-            .get_node_as::<Area2D>("Player")
-            .signals()
-            .body_entered()
-            .builder()
-            .connect_other_gd(self, Self::show_messages);
-    }
 }
 
 #[godot_api]
@@ -85,25 +70,23 @@ impl Game {
 }
 ```
 
-```admonish warning title="Getting a Godot pointer in a class method"
-While [it is possible to get a Godot pointer inside of a class method](https://godot-rust.github.io/book/register/functions.html?highlight=bind_mut#calling-rust-methods-binds), `bind()` and
-`bind_mut()` will not be able to return a guarded object as it is ready
-implicity bound for the method call.
-```
+While [it is possible to get a Godot pointer inside of a class method](https://godot-rust.github.io/book/register/functions.html?highlight=bind_mut#calling-rust-methods-binds),
+`bind()` and `bind_mut()` will not be able to return a guarded object as it is ready
+implicitly bound for the method call.  The below code sample describes how the
+approach would fail.
 
 ```rust
 #[godot_api]
 impl Game {
-    fn crash(&mut self) {
-        // FAIL! While you can have multiple smart pointers, you can't bind
-        // multiple items. This will not release an existing guard.
-        let gd = self.object_to_owned();
+    fn crash_the_program(&mut self) {
+        let gd = self.to_gd();
 
-        // FAIL! You cannot use drop to free a guard on a borrowed object.
-        std::mem::drop(self); // Doesn't do anything
+        // Furthermore `drop` is a noop on a borrowed value.
+        std::mem::drop(self);
 
         godot::task::spawn(async move {
-            // FAIL! `drop` did nothing so this will crash your program!
+            // Because the `self` passed to `crash_the_program` has implicitly had
+            // `bind_mut` called, the rebind below will cause the program to crash.
             gd.bind_mut();
         });
     }
@@ -111,11 +94,8 @@ impl Game {
 }
 ```
 
-```admonish warning title="Joining threads"
-Because the Godot engine is running separate of Rust, you will want
-to be thoughtful on using any native Rust calls for joining async calls
-to avoid a deadlock freezing your program.
-```
+Because both Rust and Godot run in the same process (and even in the same
+thread), block a thread waiting for the future will cause the program to freeze.
 
 ```rust
 #[godot_api]
@@ -126,8 +106,9 @@ impl Game {
     }
 
     fn freeze_the_program(&mut self) {
-        // FAIL! This will cause a deadlock that will freeze your program
-        // where Rust and Godot are waiting for each other!
+        // The program will freeze when block_on is called here.
+        // The correct approach is to use `godot::task::spawn` to
+        // start async tasks.
         futures::executor::block_on(self.sleep(1.0));
     }
 

@@ -15,7 +15,7 @@
   - [Built-in types](godot-api/builtins.md)
   - [Objects](godot-api/objects.md)
   - [Calling functions](godot-api/functions.md)
-  - [Futures and Deferred Functions](godot-api/async.md)
+  - [Async Programming](godot-api/async.md)
 - [Registering Rust symbols](register/index.md)
   - [Classes](register/classes.md)
   - [Functions](register/functions.md)
