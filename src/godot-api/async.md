@@ -13,10 +13,10 @@ Execute logic using a future or a deferred function at the end of the frame.
 ## Running Deferred logic
 
 Sometimes it is useful to run logic after all of the other logic of the other
-nodes has complete.  While you can ask the
-[Godot engine to execute exported Rust functions](https://godot-rust.github.io/gdnative-book/bind/calling-gdscript.html#function-calls)
+nodes has complete.  While you can ask the Godot engine
+[to execute exported Rust functions with `call_deferred`](https://godot-rust.github.io/gdnative-book/bind/calling-gdscript.html#function-calls)
 , godot-rust also provides a type-safe way to defer executed logic to the next
-frame.
+frame with `run_deferred`.
 
 ```rust
 use godot::prelude::*;
@@ -43,14 +43,11 @@ impl Game {
 
 Rust's futures are fully supported for integrating asynchronous programming.
 The key point is that you will need you will need a Godot pointer that can be passed
-to `godot::task::spawn`.
-
-The only way to connect a signal in Rust so that the callback method
-is called with a Godot pointer is to use the signal builder.
+to `godot::task::spawn`. The function must be setup to receive a Godot pointer
+instead of the base class.
 
 ```rust
 use godot::prelude::*;
-use godot::classes::Area2D;
 
 #[derive(GodotClass)]
 #[class(init, base=Node)]
@@ -60,15 +57,12 @@ struct Game {
 
 #[godot_api]
 impl Game {
-    // Async function that implements sleep using Godot timers.
     async fn sleep(&self, duration: f64) {
-        let timer = self.base().get_tree().create_timer(duration);
-        // Use a future to wait for the timeout signal.
-        timer.signals().timeout().to_future().await;
+        // Your logic to sleep here
     }
 
     // Show one message immediately, and other after one second.
-    #[func(gd_self)] // Also allow attaching the callback with the Godot editor.
+    #[func(gd_self)] // Allow attaching the callback with the Godot editor.
     fn show_messages(this: Gd<Self>, _area: Gd<Node2D>) {
         godot::task::spawn(async move {
             godot_print!("Immediate message!");
@@ -79,10 +73,10 @@ impl Game {
 }
 ```
 
-While it is possible to
+While it is possible to get
 [a Godot pointer inside of a class method](https://godot-rust.github.io/book/register/functions.html?highlight=bind_mut#calling-rust-methods-binds),
 `bind()` and `bind_mut()` will not be able to return a guarded object as it is ready
-implicitly bound for the method call.  The below code sample describes how the
+implicitly bound for the method call.  The below code sample describes how this
 approach would fail.
 
 ```rust
@@ -105,14 +99,14 @@ impl Game {
 ```
 
 Because both Rust and Godot run in the same process (and even in the same
-thread), block a thread waiting for the future will cause the program to freeze.
+thread), trying to block a thread outside of a spawned task waiting for the
+future will cause the program to freeze.
 
 ```rust
 #[godot_api]
 impl Game {
     async fn sleep(&self, duration: f64) {
-        let timer = self.base().get_tree().create_timer(duration);
-        timer.signals().timeout().to_future().await;
+        // Your logic to sleep here
     }
 
     fn freeze_the_program(&mut self) {
